@@ -1,16 +1,54 @@
+#include <cstdint>
 #include <iostream>
+#include <unordered_map>
+#include <vector>
 
-// TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
-int main() {
-    // TIP Press <shortcut actionId="RenameElement"/> when your caret is at the <b>lang</b> variable name to see how CLion can help you rename it.
-    auto lang = "C++";
-    std::cout << "Hello and welcome to " << lang << "!\n";
+using Entity = std::uint32_t;
 
-    for (int i = 1; i <= 5; i++) {
-        // TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-        std::cout << "i = " << i << std::endl;
+class Registry {
+    public:
+    Entity createEntity() {
+        Entity id = nextId++;
+        entities.push_back(id);
+        return id;
     }
 
+    template <typename T>
+    void add(Entity e, const T& component) {
+        auto& pool = poolOf<T>();
+        pool[e] = component;
+    }
+
+    template <typename T>
+    bool has(Entity e) {
+        auto& pool = poolOf<T>();
+        return pool.contains(e);
+    }
+
+    template <typename T>
+    T& get(Entity e) {
+        return poolOf<T>().at[e];
+    }
+
+    template <typename... Components, typename Func>
+    void view(Func f) {
+        for (Entity e : entities) {
+            if ((has<Components>(e) && ...)) {
+                f(e, get<Components>(e)...);
+            }
+        }
+    }
+private:
+    Entity nextId = 1;
+    std::vector<Entity> entities;
+
+    template <typename T>
+    std::unordered_map<Entity, T>& poolOf() {
+        static std::unordered_map<Entity, T> pool;
+        return pool;
+    }
+};
+
+int main() {
     return 0;
-    // TIP See CLion help at <a href="https://www.jetbrains.com/help/clion/">jetbrains.com/help/clion/</a>. Also, you can try interactive lessons for CLion by selecting 'Help | Learn IDE Features' from the main menu.
 }
